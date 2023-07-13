@@ -1,4 +1,5 @@
 use imdb;
+/*SEGMENT 1*/
 #	What are the different tables in the database and how are they connected to each other in the database?
 /*Ans :- */ show tables; /* all the tables are connected to each other through primary & foreign key*/
 #	Find the total number of rows in each table of the schema.
