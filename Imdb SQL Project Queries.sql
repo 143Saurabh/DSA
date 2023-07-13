@@ -10,6 +10,7 @@ use imdb;
 /*Ans :- */ select count(*) as Row_Count from role_mapping;
 #	Identify which columns in the movie table have null values.
 /* Ans :-*/ select * from movie order by id asc;
+/*SEGMENT 2*/
 # -	Determine the total number of movies released each year and analyse the month-wise trend.
 /* Ans :- */ select year, month(date_published) as release_month,count(*) as movies_count from movie
 			 group by year,release_month
@@ -17,6 +18,7 @@ use imdb;
 # - Calculate the number of movies produced in the USA or India in the year 2019
 /* Ans :- */ select country ,count(*) as Movies_count,Year from movie where year=2019 and country in ('USA','India')
              group by country;
+/*SEGMENT 3*/
 #-	Retrieve the unique list of genres present in the dataset
 /* Ans :-*/ Select distinct genre  from genre;          
 #-	Identify the genre with the highest number of movies produced overall.
@@ -38,6 +40,7 @@ FROM (
   inner join genre on genre.movie_id = movie.id
   GROUP BY genre
 ) AS genre_counts ;
+/*SEGMENT 4*/
 #-	Retrieve the minimum and maximum values in each column of the ratings table (except movie_id).
 /* Ans :-*/ select max(avg_rating) as max_avg_rating,max(total_votes) as max_votes
  , max(median_rating) as max_median_rating 
@@ -70,7 +73,7 @@ FROM (
              where m.title like 'The%' and r.avg_rating > 8
              group by g.genre,m.title,r.avg_rating
              order by r.avg_rating desc;
-            
+/*SEGMENT 5*/            
 #-	Identify the columns in the names table that have null values.
 /* Ans :- */ 
 #-	Determine the top three directors in the top three genres with movies having an average rating > 8.
@@ -112,6 +115,7 @@ FROM (
              inner join ratings R on R.movie_id = M.id
              where M.country = 'India' and M.languages = 'Hindi' and RM.category = 'actress'
              order by R.avg_rating DESC limit 5;
+/*SEGMENT 6*/
 #-	Classify thriller movies based on average ratings into different categories.
 /*ANs :- */ SELECT m.id,m.title as Movie_name,r.avg_rating as star_rating,
 		CASE
@@ -194,6 +198,8 @@ GROUP BY
 ORDER BY
   movie_count DESC
 LIMIT 9;
+
+/*SEGMENT 7 */
 #-	Based on the analysis, provide recommendations for the types of content Bolly movies should focus on producing.
 /*Ans:-*/ /*Quality Ratings: The average ratings of the top directors' movies suggest a focus
  on producing content that resonates with the audience and receives positive feedback. 
