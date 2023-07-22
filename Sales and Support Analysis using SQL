@@ -1,0 +1,133 @@
+use interview;
+/*Segment 1: Database - Tables, Columns, Relationships*/
+#-	Identify the tables in the database and their respective columns.
+/*Ans:-*/ show tables; select * from agents;select * from customer; select * from orders;
+#-	Determine the number of records in each table within the schema.
+/*Ans:-*/ select count(*) as number_of_records from agents;
+          select count(*) as number_of_records from customer; 
+		  select count(*) as number_of_records from orders;
+#-	Identify and handle any missing or inconsistent values in the dataset.
+/*Ans:-*/
+#-	Analyse the data types of the columns in each table to ensure they are appropriate for the stored data.
+/*Ans:-*/
+#-	Identify any duplicate records within the tables and develop a strategy for handling them.
+/*Ans:-*/ 
+
+/*Segment 2: Basic Sales Analysis*/
+#-	Write SQL queries to retrieve the total number of orders, total revenue, and average order value.
+/*Ans:-*/ select count(*) as orders_count 
+         ,round(sum(ord_amount),0) as total_revenue 
+         , round(avg(ord_amount),0) as average_order_value from orders;
+#-	The operations team needs to track the agent who has handled the maximum number of high-grade customers. 
+#Write a SQL query to find the agent_name who has the highest count of customers with a grade of 5. 
+#Display the agent_name and the count of high-grade customers.
+/*Ans:-*/ select A.agent_code,A.agent_name,count(*) as high_rated_customers_count from Customer C
+          inner join agents A on C.agent_code = A.agent_code
+		  group by A.agent_code,C.grade
+          order by grade desc limit 1;
+         
+#-	The company wants to identify the most active customer cities in terms of the total order amount.
+# Write a SQL query to find the top 3 customer cities with the highest total order amount. 
+#Include cust_city and total_order_amount in the output.
+/*Ans:-*/ select C.cust_city,ORD.ord_amount from customer C
+          inner join orders ORD on C.cust_code = ORD.cust_code
+          order by ord_amount desc limit 3;
+/*Segment 3: Customer Analysis:*/
+#-	Calculate the total number of customers.
+/*Ans:-*/ select count(*) as total_customers from customer;
+#-	Identify the top-spending customers based on their total order value.
+/*Ans:-*/ select cust_name,ORD.ord_amount from customer C
+		  inner join orders ORD on C.cust_code = ORD.cust_code
+          order by ORD.ord_amount DESC;
+#-	Analyse customer retention by calculating the percentage of repeat customers.
+/*Ans:-*/
+#-	Find the name of the customer who has the maximum outstanding amount from every country. 
+/*Ans:-*/ select cust_name,cust_country,max(outstanding_amt) as max_outstanding_amt from customer 
+          group by cust_name,cust_country,outstanding_amt
+          order by outstanding_amt desc limit 1;
+          
+#-	Write a SQL query to calculate the percentage of customers in each grade category (1 to 5). 
+/*Ans:-*/ SELECT grade,COUNT(*) as total_customers,(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM customer)) as percentage
+FROM customer
+GROUP BY grade
+ORDER BY grade;
+
+/*Segment 4: Agent Performance Analysis*/
+# -	Company wants to provide a performance bonus to their best agents based on the maximum order amount. Find the top 5 agents eligible for it. 
+/*Ans:-*/ select A.agent_name,A.agent_code,O.ord_amount from agents A
+          inner join orders O on A.agent_code = O.agent_code
+          order by O.ord_amount DESC limit 5;
+# -	The company wants to analyse the performance of agents based on the number of orders they have handled. 
+#Write a SQL query to rank agents based on the total number of orders they have processed.
+#- Display agent_name, total_orders, and their respective ranking   
+/*Ans*/ select agent_name ,count(O.ord_num) as order_count ,rank() over (order by count(O.ord_num) desc) as agent_rank from agents A
+        inner join orders O on A.agent_code = O.agent_code
+        group by agent_name
+        order by agent_rank;
+        
+#-	Company wants to change the commission for the agents, basis advance payment they collected.
+# Write a sql query which creates a new column updated_commision on the basis below rules.
+#○	If the average advance amount collected is less than 750, there is no change in commission.
+#○	If the average advance amount collected is between 750 and 1000 (inclusive), the new commission will be 1.5 times the old commission.
+#○	If the average advance amount collected is more than 1000, the new commission will be 2 times the old commission.
+/*Ans:-*/SELECT A.agent_name,A.commission,avg(O.advance_amount) as avg_advance_amount,
+    CASE 
+        WHEN AVG(O.advance_amount) < 750 THEN A.commission
+        WHEN AVG(O.advance_amount) BETWEEN 750 AND 1000 THEN A. commission * 1.5
+        WHEN AVG(O.advance_amount) > 1000 THEN A.commission * 2
+    END as updated_commission
+FROM agents A
+inner join orders O on A.agent_code = O.agent_code
+GROUP BY A.agent_name,A.commission;
+
+/*Segment 5: SQL Tasks*/
+#-	Add a new column named avg_rcv_amt in the table customers which contains the average receive amount for every country. 
+#    Display all columns from the customer table along with the avg_rcv_amt column in the last.
+/*Ans:-*/ select  avg(receive_amt) as avg_rcv_amt,cust_country from customer
+		  group by customer.cust_country;
+/*ALTER TABLE customer ADD COLUMN avg_rcv_amt DECIMAL(10, 2); */
+/*UPDATE customer AS c1
+JOIN (
+    SELECT cust_country, AVG(receive_amt) AS avg_receive_amt
+    FROM customer
+    GROUP BY cust_country
+) AS subquery ON c1.cust_country = subquery.cust_country
+SET c1.avg_rcv_amt = subquery.avg_receive_amt;*/
+
+#-	Write a sql query to create and call a UDF named avg_amt to return the average outstanding amount 
+#    of the customers which are managed by a given agent. Also, call the UDF with the agent name ‘Mukesh’
+/*Ans:-*/ 
+DELIMITER //
+CREATE FUNCTION avg_amt(agent_name_param VARCHAR(255))
+RETURNS DECIMAL(10, 2)
+deterministic
+BEGIN
+    DECLARE avg_outstanding DECIMAL(10, 2);
+    SET agent_name_param=agent_name;
+	set avg_outstanding = (SELECT   AVG(C.outstanding_amt) as avg_outstanding
+    FROM agents A
+    inner join customer C on A.agent_code = C.agent_code
+    WHERE A.agent_name = (select distinct agent_name as agent_name_param from agents)
+    group by A.agent_name
+    limit 1);
+    
+    RETURN avg_outstanding;
+END //
+DELIMITER ;
+SELECT avg_amt('Mukesh') ;
+SELECT   AVG(outstanding_amt) 
+    FROM customer C
+    inner join agents A on C.agent_code = A.agent_code
+    WHERE agent_name = 'Mukesh'
+    group by C.agent_code
+    limit 1;
+
+
+
+    
+
+
+
+
+        
+          
