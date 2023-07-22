@@ -96,33 +96,66 @@ SET c1.avg_rcv_amt = subquery.avg_receive_amt;*/
 
 #-	Write a sql query to create and call a UDF named avg_amt to return the average outstanding amount 
 #    of the customers which are managed by a given agent. Also, call the UDF with the agent name ‘Mukesh’
-/*Ans:-*/ 
-DELIMITER //
-CREATE FUNCTION avg_amt(agent_name_param VARCHAR(255))
-RETURNS DECIMAL(10, 2)
-deterministic
+/*Ans:-*/ DELIMITER //
+CREATE PROCEDURE average_outstanding(IN agent_name_param varchar(40))
 BEGIN
-    DECLARE avg_outstanding DECIMAL(10, 2);
-    SET agent_name_param=agent_name;
-	set avg_outstanding = (SELECT   AVG(C.outstanding_amt) as avg_outstanding
-    FROM agents A
+    SELECT avg(C.outstanding_amt) from agents A
     inner join customer C on A.agent_code = C.agent_code
-    WHERE A.agent_name = (select distinct agent_name as agent_name_param from agents)
+    WHERE A.agent_name = agent_name_param
     group by A.agent_name
-    limit 1);
-    
-    RETURN avg_outstanding;
+    limit 1;
 END //
 DELIMITER ;
-SELECT avg_amt('Mukesh') ;
-SELECT   AVG(outstanding_amt) 
-    FROM customer C
-    inner join agents A on C.agent_code = A.agent_code
-    WHERE agent_name = 'Mukesh'
-    group by C.agent_code
-    limit 1;
+CALL average_outstanding('Mukesh');
 
+#-	Write a sql query to create and call a subroutine called cust_detail to return all the 
+#-  details of the customer which are having the given grade. Also, call the subroutine with grade 2.
+/*Ans:-*/
+DELIMITER //
+CREATE PROCEDURE cust_detail(IN grade_param INT)
+BEGIN
+    SELECT *
+    FROM customer
+    WHERE grade = grade_param;
+END //
+DELIMITER ;
+CALL cust_detail(2);
 
+#-	Write a stored procedure sp_name which will return the concatenated ord_num (comma separated) of the 
+#- customer with input customer code using cursor. Also, write the procedure call query with cust_code ‘C00015’.
+/*Ans:-*/ DELIMITER //
+CREATE PROCEDURE sp_name(IN cust_code_param VARCHAR(255))
+BEGIN
+    DECLARE ord_number VARCHAR(1000) DEFAULT '';
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE ord_cursor CURSOR FOR
+        SELECT ord_number
+        FROM orders
+        WHERE cust_code = cust_code_param;
+
+    -- Declare CONTINUE HANDLER to handle NOT FOUND condition
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    OPEN ord_cursor;
+    read_loop: LOOP
+        FETCH ord_cursor INTO ord_number;
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+        IF ord_number <> '' THEN
+            SET ord_number = CONCAT(ord_number, ',', ord_num);
+        ELSE
+            SET ord_number = ord_number;
+        END IF;
+    END LOOP;
+    CLOSE ord_cursor;
+
+    -- Return the concatenated ord_num
+    SELECT ord_number AS concatenated_ord_num;
+END //
+DELIMITER ;
+
+CALL sp_name('C00015');
 
     
 
